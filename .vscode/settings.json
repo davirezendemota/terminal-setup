@@ -1,0 +1,30 @@
+{
+  "explorer.compactFolders": false,
+  "explorer.autoReveal": false,
+  "explorer.confirmDragAndDrop": false,
+  "editor.lineNumbers": "relative",
+  "window.commandCenter": true,
+  "window.restoreWindows": "none",
+  "zenMode.restore": true,
+  "files.exclude": {
+    "**/.DS_Store": false,
+    "**/.git": false,
+    "**/.hg": false,
+    "**/.svn": false,
+    "**/CVS": false,
+    "**/Thumbs.db": false
+  },
+  "breadcrumbs.enabled": false,
+  "[php]": {
+    "editor.defaultFormatter": "bmewburn.vscode-intelephense-client"
+  },
+  "explorer.confirmDelete": false,
+  "remote.SSH.remotePlatform": {
+    "ferreiraeborzone": "linux",
+    "febserver": "linux",
+    "cs.urban-broccoli-p6j7gg59jwj376pg.feat-integracao-api-projuris": "linux"
+  },
+  "liveServer.settings.donotShowInfoMsg": true,
+  "cursor.composer.usageSummaryDisplay": "always",
+  "workbench.editor.enablePreview": false
+}
