@@ -1,0 +1,13 @@
+[user]
+	name = Davi Rezende
+	email = 75188588+davirezendemota@users.noreply.github.com
+[init]
+	defaultBranch = main
+[core]
+	autocrlf = input
+[alias]
+	glo = log --oneline
+	gwip = !git add . && git commit -m \"wip\" && git push origin HEAD
+	gunwip = !git reset --soft HEAD~1 && git restore --staged .
+	gfwip = !git add . && git commit -m \"wip\" && git push -f origin HEAD
+	gclean = !git clean -fd -e \"*.env*\"
