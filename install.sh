@@ -64,6 +64,26 @@ if [ -n "$BASH_VERSION" ] && [ "$(basename "$SHELL")" != "zsh" ]; then
   fi
 fi
 
+# --- Install Python, pip & pipenv ---
+if ! command -v python3 &>/dev/null; then
+  echo "==> Installing Python3..."
+  sudo apt-get update -qq
+  sudo apt-get install -y python3 python3-pip
+fi
+if ! command -v pipenv &>/dev/null; then
+  echo "==> Installing pipenv..."
+  pip3 install --user pipenv
+fi
+
+# --- Install Node.js & npm (via nvm) ---
+if ! command -v node &>/dev/null; then
+  echo "==> Installing Node.js via nvm..."
+  export NVM_DIR="$HOME/.nvm"
+  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+  nvm install --lts
+fi
+
 # --- Optional: Oh My Zsh (for .zshrc that uses it) ---
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
   echo "==> Installing Oh My Zsh..."
