@@ -17,6 +17,45 @@ for f in .zshrc .zprofile .gitconfig .p10k.zsh; do
   fi
 done
 
+# --- Garantir DOTFILES_DIR no .zshrc (para outros scripts se necessário) ---
+if [ -f "$HOME/.zshrc" ] && ! grep -q 'export DOTFILES_DIR=' "$HOME/.zshrc" 2>/dev/null; then
+  echo "==> Adding DOTFILES_DIR to .zshrc"
+  printf '\n# Path to this dotfiles repo (set by install.sh)\nexport DOTFILES_DIR="%s"\n' "$DOTFILES_DIR" >> "$HOME/.zshrc"
+fi
+
+# --- Terminal title: injetar lógica no .zshrc ---
+if [ -f "$HOME/.zshrc" ] && ! grep -q '_set_terminal_title' "$HOME/.zshrc" 2>/dev/null; then
+  echo "==> Adding terminal title to .zshrc"
+  cat >> "$HOME/.zshrc" << 'TERMINAL_TITLE_ZSH'
+# Terminal title (dotfiles)
+_set_terminal_title() {
+  local title="${HAWKOS_TERMINAL_TITLE:-HawkOS — pronto}"
+  printf '\033]0;%s\007' "$title"
+}
+if type add-zsh-hook &>/dev/null; then
+  add-zsh-hook precmd _set_terminal_title
+else
+  precmd_functions+=(_set_terminal_title)
+fi
+TERMINAL_TITLE_ZSH
+fi
+
+# --- Terminal title: injetar lógica no .bashrc ---
+if [ ! -f "$HOME/.bashrc" ]; then
+  touch "$HOME/.bashrc"
+fi
+if ! grep -q '_set_terminal_title' "$HOME/.bashrc" 2>/dev/null; then
+  echo "==> Adding terminal title to .bashrc"
+  cat >> "$HOME/.bashrc" << 'TERMINAL_TITLE_BASH'
+# Terminal title (dotfiles)
+_set_terminal_title() {
+  local title="${HAWKOS_TERMINAL_TITLE:-HawkOS — pronto}"
+  printf '\033]0;%s\007' "$title"
+}
+PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}_set_terminal_title"
+TERMINAL_TITLE_BASH
+fi
+
 # --- Copy .cursor/commands (e.g. /gsync) into $HOME/.cursor ---
 if [ -d "$DOTFILES_DIR/.cursor/commands" ]; then
   echo "==> Copying .cursor/commands to \$HOME/.cursor"
