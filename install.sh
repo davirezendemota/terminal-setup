@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
-# Dotfiles install script for GitHub Codespaces and local machines.
+# terminal-setup install script for GitHub Codespaces and local machines.
 # When this script exists, Codespaces does NOT copy dotfiles to $HOME; we do it here.
 
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TERMINAL_SETUP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PATH="$HOME/.local/bin:$PATH"
 ZSHRC="${ZSHRC:-$HOME/.zshrc}"
-TERMINAL_MARKER_BEGIN="# >>> dotfiles terminal BEGIN >>>"
-TERMINAL_MARKER_END="# <<< dotfiles terminal END >>>"
+TERMINAL_MARKER_BEGIN="# >>> terminal-setup BEGIN >>>"
+TERMINAL_MARKER_END="# <<< terminal-setup END >>>"
 
 FULL_INSTALL=false
 TERMINAL_ONLY=false
@@ -19,7 +19,7 @@ usage() {
 Usage: ./install.sh [options]
 
 Options:
-  --full            Copy all dotfiles to \$HOME (default in Codespaces)
+  --full            Copy shell dotfiles to \$HOME (default in Codespaces)
   --terminal-only   Only install nvim/tmux symlinks and shell integration
   --terminal-deps   Install neovim and tmux if missing
   -h, --help
@@ -92,7 +92,7 @@ install_terminal_deps() {
 }
 
 install_terminal_configs() {
-  local term_dir="$DOTFILES_DIR/terminal"
+  local term_dir="$TERMINAL_SETUP_DIR/terminal"
   if [ ! -d "$term_dir" ]; then
     echo "==> No terminal/ directory found; skipping nvim/tmux setup"
     return 0
@@ -125,52 +125,58 @@ remove_legacy_terminal_lines() {
   fi
 
   grep -v 'Documents/terminal-config/zsh/terminal.zsh' "$ZSHRC" |
+    grep -v 'Documents/dotfiles/terminal/zsh/terminal.zsh' "$ZSHRC" |
     grep -v '^# Terminal configs (tmux, neovim, editor)$' |
     grep -v '^# >>> terminal-config BEGIN >>>$' |
     grep -v '^# <<< terminal-config END >>>$' |
+    grep -v '^# >>> dotfiles terminal BEGIN >>>$' |
+    grep -v '^# <<< dotfiles terminal END >>>$' |
     grep -v '^export TERMINAL_CONFIG_DIR=' |
-    grep -v 'TERMINAL_CONFIG_DIR/terminal/zsh/terminal.zsh' > "${ZSHRC}.tmp" || true
+    grep -v '^export DOTFILES_DIR=' |
+    grep -v 'TERMINAL_CONFIG_DIR/terminal/zsh/terminal.zsh' |
+    grep -v 'DOTFILES_DIR/terminal/zsh/terminal.zsh' |
+    grep -v '^# Path to dotfiles repo' > "${ZSHRC}.tmp" || true
   mv "${ZSHRC}.tmp" "$ZSHRC"
 }
 
-ensure_dotfiles_dir_in_zshrc() {
+ensure_terminal_setup_in_zshrc() {
   touch "$ZSHRC"
   remove_terminal_zsh_block
   remove_legacy_terminal_lines
 
-  if grep -q 'export DOTFILES_DIR=' "$ZSHRC" 2>/dev/null; then
-    sed -i.bak "s|^export DOTFILES_DIR=.*|export DOTFILES_DIR=\"$DOTFILES_DIR\"|" "$ZSHRC"
+  if grep -q 'export TERMINAL_SETUP_DIR=' "$ZSHRC" 2>/dev/null; then
+    sed -i.bak "s|^export TERMINAL_SETUP_DIR=.*|export TERMINAL_SETUP_DIR=\"$TERMINAL_SETUP_DIR\"|" "$ZSHRC"
     rm -f "${ZSHRC}.bak"
   else
-    cat >> "$ZSHRC" <<EOF
+    cat >>"$ZSHRC" <<EOF
 
-# Path to dotfiles repo (set by install.sh)
-export DOTFILES_DIR="$DOTFILES_DIR"
+# Path to terminal-setup repo (set by install.sh)
+export TERMINAL_SETUP_DIR="$TERMINAL_SETUP_DIR"
 EOF
   fi
 
   if ! grep -qF "$TERMINAL_MARKER_BEGIN" "$ZSHRC" 2>/dev/null; then
-    cat >> "$ZSHRC" <<EOF
+    cat >>"$ZSHRC" <<EOF
 
 $TERMINAL_MARKER_BEGIN
-[[ -f "\$DOTFILES_DIR/terminal/zsh/terminal.zsh" ]] && source "\$DOTFILES_DIR/terminal/zsh/terminal.zsh"
+[[ -f "\$TERMINAL_SETUP_DIR/terminal/zsh/terminal.zsh" ]] && source "\$TERMINAL_SETUP_DIR/terminal/zsh/terminal.zsh"
 $TERMINAL_MARKER_END
 EOF
   fi
 
-  echo "==> Updated $ZSHRC with DOTFILES_DIR and terminal integration"
+  echo "==> Updated $ZSHRC with TERMINAL_SETUP_DIR and terminal integration"
 }
 
-copy_dotfiles() {
+copy_shell_dotfiles() {
   for f in .zshrc .zprofile .gitconfig .p10k.zsh; do
-    if [ -f "$DOTFILES_DIR/$f" ]; then
+    if [ -f "$TERMINAL_SETUP_DIR/$f" ]; then
       echo "==> Copying $f to \$HOME"
-      cp "$DOTFILES_DIR/$f" "$HOME/$f"
+      cp "$TERMINAL_SETUP_DIR/$f" "$HOME/$f"
     fi
   done
 
   if [ -f "$HOME/.zshrc" ]; then
-    sed -i.bak "s|^export DOTFILES_DIR=.*|export DOTFILES_DIR=\"$DOTFILES_DIR\"|" "$HOME/.zshrc" 2>/dev/null || true
+    sed -i.bak "s|^export TERMINAL_SETUP_DIR=.*|export TERMINAL_SETUP_DIR=\"$TERMINAL_SETUP_DIR\"|" "$HOME/.zshrc" 2>/dev/null || true
     rm -f "${HOME}/.zshrc.bak"
   fi
 }
@@ -178,8 +184,8 @@ copy_dotfiles() {
 install_terminal_title() {
   if [ -f "$ZSHRC" ] && ! grep -q '_set_terminal_title' "$ZSHRC" 2>/dev/null; then
     echo "==> Adding terminal title to .zshrc"
-    cat >> "$ZSHRC" << 'TERMINAL_TITLE_ZSH'
-# Terminal title (dotfiles)
+    cat >>"$ZSHRC" <<'TERMINAL_TITLE_ZSH'
+# Terminal title (terminal-setup)
 _set_terminal_title() {
   local title="${HAWKOS_TERMINAL_TITLE:-HawkOS — pronto}"
   printf '\033]0;%s\007' "$title"
@@ -197,8 +203,8 @@ TERMINAL_TITLE_ZSH
   fi
   if ! grep -q '_set_terminal_title' "$HOME/.bashrc" 2>/dev/null; then
     echo "==> Adding terminal title to .bashrc"
-    cat >> "$HOME/.bashrc" << 'TERMINAL_TITLE_BASH'
-# Terminal title (dotfiles)
+    cat >>"$HOME/.bashrc" <<'TERMINAL_TITLE_BASH'
+# Terminal title (terminal-setup)
 _set_terminal_title() {
   local title="${HAWKOS_TERMINAL_TITLE:-HawkOS — pronto}"
   printf '\033]0;%s\007' "$title"
@@ -209,15 +215,15 @@ TERMINAL_TITLE_BASH
 }
 
 install_cursor_commands() {
-  if [ -d "$DOTFILES_DIR/.cursor/commands" ]; then
+  if [ -d "$TERMINAL_SETUP_DIR/.cursor/commands" ]; then
     echo "==> Copying .cursor/commands to \$HOME/.cursor"
     mkdir -p "$HOME/.cursor/commands"
-    cp -r "$DOTFILES_DIR/.cursor/commands/"* "$HOME/.cursor/commands/" 2>/dev/null || true
+    cp -r "$TERMINAL_SETUP_DIR/.cursor/commands/"* "$HOME/.cursor/commands/" 2>/dev/null || true
   fi
 }
 
 install_vscode_cursor_user() {
-  if [ -d "$DOTFILES_DIR/.vscode" ]; then
+  if [ -d "$TERMINAL_SETUP_DIR/.vscode" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
       CURSOR_USER="$HOME/Library/Application Support/Cursor/User"
     else
@@ -225,9 +231,9 @@ install_vscode_cursor_user() {
     fi
     if mkdir -p "$CURSOR_USER" 2>/dev/null; then
       for f in settings.json keybindings.json; do
-        if [ -f "$DOTFILES_DIR/.vscode/$f" ]; then
+        if [ -f "$TERMINAL_SETUP_DIR/.vscode/$f" ]; then
           echo "==> Copying .vscode/$f to Cursor User"
-          cp "$DOTFILES_DIR/.vscode/$f" "$CURSOR_USER/$f"
+          cp "$TERMINAL_SETUP_DIR/.vscode/$f" "$CURSOR_USER/$f"
         fi
       done
     fi
@@ -296,7 +302,7 @@ install_shell_stack() {
 main() {
   parse_args "$@"
 
-  echo "==> Dotfiles install from $DOTFILES_DIR"
+  echo "==> terminal-setup install from $TERMINAL_SETUP_DIR"
 
   if $INSTALL_TERMINAL_DEPS; then
     install_terminal_deps || true
@@ -305,24 +311,24 @@ main() {
   install_terminal_configs
 
   if $TERMINAL_ONLY; then
-    ensure_dotfiles_dir_in_zshrc
+    ensure_terminal_setup_in_zshrc
     echo "==> Terminal-only install done. Run: source ~/.zshrc"
     exit 0
   fi
 
   if $FULL_INSTALL; then
-    copy_dotfiles
+    copy_shell_dotfiles
     install_terminal_title
     install_cursor_commands
     install_vscode_cursor_user
     install_shell_stack
   else
-    ensure_dotfiles_dir_in_zshrc
+    ensure_terminal_setup_in_zshrc
     install_cursor_commands
     install_vscode_cursor_user
   fi
 
-  echo "==> Dotfiles install done. Open a new terminal or run: exec zsh"
+  echo "==> terminal-setup install done. Open a new terminal or run: exec zsh"
 }
 
 main "$@"

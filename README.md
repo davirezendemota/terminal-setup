@@ -1,6 +1,6 @@
-# Dotfiles (GitHub Codespaces)
+# terminal-setup
 
-Configuração de dotfiles para uso em **GitHub Codespaces**. Também pode ser usada localmente (macOS/Linux).
+Configuração de terminal e shell para **GitHub Codespaces** e uso local (macOS/Linux).
 
 ## O que é configurado
 
@@ -17,9 +17,9 @@ Configuração de dotfiles para uso em **GitHub Codespaces**. Também pode ser u
 ## Ativar no GitHub Codespaces
 
 1. No GitHub: **Settings** → **Codespaces**.
-2. Em **Dotfiles**, escolha este repositório no dropdown.
+2. Em **Dotfiles**, escolha este repositório (`terminal-setup`) no dropdown.
 3. Marque **Automatically install dotfiles**.
-4. Crie um novo codespace; o repositório será clonado, os dotfiles copiados para `$HOME` e o `install.sh` executado.
+4. Crie um novo codespace; o repositório será clonado e o `install.sh` executado.
 
 ## Instalação do Cursor Agent CLI
 
@@ -62,8 +62,8 @@ Para instalar manualmente (por exemplo, em outra máquina), use o comando acima.
 ### Só terminal (nvim + tmux) — não sobrescreve seu `.zshrc`
 
 ```bash
-git clone git@github.com:davirezendemota/dotfiles.git ~/Documents/dotfiles
-cd ~/Documents/dotfiles
+git clone git@github.com:davirezendemota/terminal-setup.git ~/Documents/terminal-setup
+cd ~/Documents/terminal-setup
 ./install.sh --terminal-only --terminal-deps
 source ~/.zshrc
 ```
@@ -71,8 +71,8 @@ source ~/.zshrc
 ### Instalação completa (copia `.zshrc`, Oh My Zsh, Cursor CLI, etc.)
 
 ```bash
-git clone git@github.com:davirezendemota/dotfiles.git ~/dotfiles
-cd ~/dotfiles
+git clone git@github.com:davirezendemota/terminal-setup.git ~/terminal-setup
+cd ~/terminal-setup
 ./install.sh --full --terminal-deps
 exec zsh
 ```

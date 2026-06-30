@@ -3,7 +3,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-export DOTFILES_DIR="${DOTFILES_DIR:-$HOME/dotfiles}"
+export TERMINAL_SETUP_DIR="${TERMINAL_SETUP_DIR:-$HOME/terminal-setup}"
 
 # Path to your Oh My Zsh installation.
 export ZSH="${ZSH:-$HOME/.oh-my-zsh}"
@@ -41,5 +41,5 @@ fi
 [[ -n "$EBOS_PATH" ]] || export EBOS_PATH="${EBOS_PATH:-$HOME/workspace/ebos-rmconsult}"
 [[ -n "$HAWKOS_PATH" ]] || export HAWKOS_PATH="${HAWKOS_PATH:-$HOME/workspace/hawkos-rmconsult}"
 
-# Terminal (nvim, tmux) — requires DOTFILES_DIR
-[[ -f "${DOTFILES_DIR}/terminal/zsh/terminal.zsh" ]] && source "${DOTFILES_DIR}/terminal/zsh/terminal.zsh"
+# Terminal (nvim, tmux) — requires TERMINAL_SETUP_DIR
+[[ -f "${TERMINAL_SETUP_DIR}/terminal/zsh/terminal.zsh" ]] && source "${TERMINAL_SETUP_DIR}/terminal/zsh/terminal.zsh"

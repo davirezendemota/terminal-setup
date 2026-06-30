@@ -1,5 +1,5 @@
 # Terminal tooling: editor + tmux/neovim aliases
-# Loaded from dotfiles via install.sh
+# Loaded from terminal-setup via install.sh
 
 if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='vim'
