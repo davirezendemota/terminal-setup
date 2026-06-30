@@ -163,6 +163,7 @@ Roda **em cada host** (e no Mac local, se quiser). Sessões persistem no host �
 
 | Script | Função |
 |--------|--------|
+| `t` | attach tmux na última sessão ou cria nova |
 | `tmux-fix` | `kill-server` + remove `/tmp/tmux-$UID` + inicia tmux |
 | `tmux-kill-session` | mata sessão atual; `switch-client` p/ última outra sessão se houver |
 

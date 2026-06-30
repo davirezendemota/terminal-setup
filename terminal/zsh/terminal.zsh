@@ -19,23 +19,5 @@ else
 fi
 export VISUAL="$EDITOR"
 
-t() {
-  if [[ -n "${TMUX:-}" ]]; then
-    return 0
-  fi
-  if ! tmux has-session 2>/dev/null; then
-    tmux new
-    return
-  fi
-  local session
-  session="$(
-    tmux list-sessions -F '#{session_last_attached} #{session_name}' \
-      | sort -n \
-      | tail -1 \
-      | cut -d' ' -f2-
-  )"
-  tmux attach -t "$session"
-}
-
 alias nv='nvim'
 alias tfix='tmux-fix'

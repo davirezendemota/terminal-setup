@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Attach to the most recently used tmux session, or create one if none exist.
+set -euo pipefail
+
+if [[ -n "${TMUX:-}" ]]; then
+  exit 0
+fi
+
+if ! tmux has-session 2>/dev/null; then
+  exec tmux new
+fi
+
+session="$(
+  tmux list-sessions -F '#{session_last_attached} #{session_name}' \
+    | sort -n \
+    | tail -1 \
+    | cut -d' ' -f2-
+)"
+exec tmux attach -t "$session"
