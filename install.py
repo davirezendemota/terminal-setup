@@ -97,12 +97,15 @@ class Installer:
         else:
             self.ensure_terminal_setup_in_zshrc()
             self.install_cursor_commands()
-            self.install_vscode_cursor_user()
 
         if self.codespaces:
             self.log("terminal-setup install done. Open a new terminal or run: exec zsh")
         else:
             self.log("Local install done. Run: source ~/.zshrc")
+
+        if platform.system() == "Darwin":
+            self.install_macos_nerd_font()
+            self.disable_macos_ctrl_space_shortcuts()
 
     def install_terminal_deps(self) -> None:
         if self.command_exists("nvim") and self.command_exists("tmux"):
@@ -135,6 +138,124 @@ class Installer:
 
         self.log(f"Unsupported OS for dependency install: {system}")
 
+    def install_macos_nerd_font(self) -> None:
+        """Install MesloLGS Nerd Font for tmux Catppuccin pills and p10k."""
+        cask = "font-meslo-lg-nerd-font"
+        font_dir = self.home / "Library" / "Fonts"
+        if list(font_dir.glob("MesloLGS*Nerd*")):
+            self.log("MesloLGS Nerd Font already installed")
+            return
+        if not self.command_exists("brew"):
+            self.log("Homebrew not found; install MesloLGS Nerd Font manually for iTerm2")
+            self._log_iterm_nerd_font_hint()
+            return
+        installed = self.run(["brew", "list", "--cask", cask], check=False, capture=True)
+        if installed.returncode == 0:
+            self.log("MesloLGS Nerd Font already installed (Homebrew cask)")
+            self._log_iterm_nerd_font_hint()
+            return
+        self.log(f"Installing {cask} (Homebrew)...")
+        self.run(["brew", "install", "--cask", cask])
+        self._log_iterm_nerd_font_hint()
+
+    def _log_iterm_nerd_font_hint(self) -> None:
+        self.log(
+            "iTerm2: Settings → Profiles → Text → Font → MesloLGS Nerd Font (then open a new window)"
+        )
+
+    def disable_iterm_keybindings(self) -> None:
+        """Clear iTerm2 key maps so shortcuts reach tmux/shell."""
+        plist_path = self.home / "Library/Preferences/com.googlecode.iterm2.plist"
+        if not plist_path.is_file():
+            self.log("iTerm2 preferences not found; skipping keybinding disable")
+            return
+
+        self.run(["defaults", "write", "com.googlecode.iterm2", "GlobalKeyMap", "-dict"], check=False)
+
+        disabled_menus = (
+            "Split Horizontally with Profile…",
+            "Split Horizontally with Profile...",
+            "Split Vertically with Profile…",
+            "Split Vertically with Profile...",
+            "Split Pane Horizontally",
+            "Split Pane Vertically",
+            "Clear Buffer",
+            "Close",
+            "Close Tab",
+            "Find…",
+            "Find...",
+            "Find Next",
+            "Find Previous",
+        )
+        buddy = "/usr/libexec/PlistBuddy"
+        self.run([buddy, "-c", "Delete :NSUserKeyEquivalents", str(plist_path)], check=False)
+        self.run([buddy, "-c", "Add :NSUserKeyEquivalents dict", str(plist_path)], check=False)
+        for title in disabled_menus:
+            self.run(
+                [
+                    buddy,
+                    "-c",
+                    f"Add :NSUserKeyEquivalents:'{title}' string \\0",
+                    str(plist_path),
+                ],
+                check=False,
+            )
+
+        index = 0
+        while True:
+            exists = self.run(
+                [buddy, "-c", f"Print :'New Bookmarks':{index}:Guid", str(plist_path)],
+                check=False,
+                capture=True,
+            )
+            if exists.returncode != 0:
+                break
+            self.run(
+                [
+                    buddy,
+                    "-c",
+                    f"Delete :'New Bookmarks':{index}:'Keyboard Map'",
+                    str(plist_path),
+                ],
+                check=False,
+            )
+            self.run(
+                [
+                    buddy,
+                    "-c",
+                    f"Add :'New Bookmarks':{index}:'Keyboard Map' dict",
+                    str(plist_path),
+                ],
+                check=False,
+            )
+            index += 1
+
+        self.log("Disabled iTerm2 GlobalKeyMap, profile Key Mappings, and common menu shortcuts")
+        self.log("Restart iTerm2 (Cmd+Q) for keybinding changes to apply")
+
+    def disable_macos_ctrl_space_shortcuts(self) -> None:
+        """Free Ctrl+Space for tmux (macOS Input Sources shortcuts)."""
+        plist = self.home / "Library/Preferences/com.apple.symbolichotkeys.plist"
+        if not plist.is_file():
+            return
+        buddy = "/usr/libexec/PlistBuddy"
+        changed = False
+        for key_id in ("60", "61"):
+            result = self.run(
+                [buddy, "-c", f"Set :AppleSymbolicHotKeys:{key_id}:enabled false", str(plist)],
+                check=False,
+            )
+            if result.returncode == 0:
+                changed = True
+        if changed:
+            self.log("Disabled macOS Ctrl+Space input source shortcuts (60/61)")
+        self.log(
+            "If Ctrl+Space still fails in Terminal.app: "
+            "System Settings → Keyboard → Keyboard Shortcuts → Input Sources — "
+            "uncheck both input source items, then quit Terminal (Cmd+Q)"
+        )
+        self.log("Test: run `cat -v`, press Ctrl+Space — expect ^@")
+
     def install_terminal_configs(self) -> None:
         term_dir = self.repo_dir / "terminal"
         if not term_dir.is_dir():
@@ -151,6 +272,42 @@ class Installer:
         self._symlink(term_dir / "tmux.conf", tmux_link)
         self.log(f"Linked {nvim_link} -> {term_dir / 'nvim'}")
         self.log(f"Linked {tmux_link} -> {term_dir / 'tmux.conf'}")
+        self.install_tmux_plugins()
+        self._ensure_executable_scripts(term_dir / "bin")
+
+    def _ensure_executable_scripts(self, bin_dir: Path) -> None:
+        if not bin_dir.is_dir():
+            return
+        for script in bin_dir.iterdir():
+            if script.is_file():
+                script.chmod(script.stat().st_mode | 0o111)
+
+    def install_tmux_plugins(self) -> None:
+        plugin_root = self.repo_dir / "terminal" / "tmux" / "plugins" / "catppuccin"
+        target = plugin_root / "tmux"
+        marker = target / "catppuccin.tmux"
+        if not marker.is_file():
+            plugin_root.mkdir(parents=True, exist_ok=True)
+            if target.exists():
+                shutil.rmtree(target)
+            self.log("Cloning catppuccin/tmux (v2.3.0)...")
+            self.run(
+                [
+                    "git",
+                    "clone",
+                    "-b",
+                    "v2.3.0",
+                    "--depth",
+                    "1",
+                    "https://github.com/catppuccin/tmux.git",
+                    str(target),
+                ]
+            )
+        link_parent = self.home / ".config" / "tmux" / "plugins" / "catppuccin"
+        link_parent.mkdir(parents=True, exist_ok=True)
+        link = link_parent / "tmux"
+        self._symlink(target, link)
+        self.log(f"Linked {link} -> {target}")
 
     def _symlink(self, target: Path, link: Path) -> None:
         if link.is_symlink() or link.exists():

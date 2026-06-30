@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Recover from "server exited unexpectedly" (stale/corrupt tmux socket).
+set -euo pipefail
+
+uid="$(id -u)"
+socket_dir="/tmp/tmux-${uid}"
+
+echo "Stopping tmux server (if any)..."
+tmux kill-server 2>/dev/null || true
+
+if [[ -d "$socket_dir" ]]; then
+  echo "Removing stale socket: $socket_dir"
+  rm -rf "$socket_dir"
+fi
+
+echo "Starting tmux..."
+exec tmux "$@"

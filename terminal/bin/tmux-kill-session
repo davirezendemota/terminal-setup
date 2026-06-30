@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Kill current tmux session; switch to the most recently used other session if any.
+set -euo pipefail
+
+current="$(tmux display-message -p '#{session_name}')"
+next=""
+
+while IFS=$'\t' read -r _ name; do
+  [[ "$name" == "$current" ]] && continue
+  next="$name"
+done < <(tmux list-sessions -F '#{session_last_attached}	#{session_name}' | sort -n)
+
+if [[ -n "$next" ]]; then
+  tmux switch-client -t "$next" \; kill-session -t "$current"
+else
+  tmux kill-session -t "$current"
+fi
