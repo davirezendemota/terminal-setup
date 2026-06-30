@@ -149,6 +149,7 @@ Roda **em cada host** (e no Mac local, se quiser). Sessões persistem no host �
   - `Ctrl+d` — detach (sem prefix)
   - `Ctrl+n` — próxima aba (sem prefix)
   - `Ctrl+h/j/k/l` — vim-tmux-navigator (nvim + panes)
+  - `[` → copy mode: `v` seleciona, `y` copia (buffer tmux), `]` cola
 - **Recuperar crash:** `tfix` ou `tmux-fix` — limpa socket stale (`server exited unexpectedly`)
 
 ### Shell (`terminal/zsh/terminal.zsh`)
